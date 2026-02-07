@@ -35,6 +35,13 @@ function getSessionsDir() {
 }
 
 /**
+ * Get the session aliases file path
+ */
+function getAliasesPath() {
+  return path.join(getClaudeDir(), 'session-aliases.json');
+}
+
+/**
  * Get the learned skills directory
  */
 function getLearnedSkillsDir() {
@@ -77,6 +84,36 @@ function getTimeString() {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+/**
+ * Get the git repository name
+ */
+function getGitRepoName() {
+  const result = runCommand('git rev-parse --show-toplevel');
+  if (!result.success) return null;
+  return path.basename(result.output);
+}
+
+/**
+ * Get project name from git repo or current directory
+ */
+function getProjectName() {
+  const repoName = getGitRepoName();
+  if (repoName) return repoName;
+  return path.basename(process.cwd()) || null;
+}
+
+/**
+ * Get short session ID from CLAUDE_SESSION_ID environment variable
+ * Returns last 8 characters, falls back to project name then 'default'
+ */
+function getSessionIdShort(fallback = 'default') {
+  const sessionId = process.env.CLAUDE_SESSION_ID;
+  if (sessionId && sessionId.length > 0) {
+    return sessionId.slice(-8);
+  }
+  return getProjectName() || fallback;
 }
 
 /**
@@ -135,7 +172,7 @@ function findFiles(dir, pattern, options = {}) {
           searchDir(fullPath);
         }
       }
-    } catch (err) {
+    } catch (_err) {
       // Ignore permission errors
     }
   }
@@ -352,6 +389,7 @@ module.exports = {
   getHomeDir,
   getClaudeDir,
   getSessionsDir,
+  getAliasesPath,
   getLearnedSkillsDir,
   getTempDir,
   ensureDir,
@@ -360,6 +398,11 @@ module.exports = {
   getDateString,
   getTimeString,
   getDateTimeString,
+
+  // Session/Project
+  getSessionIdShort,
+  getGitRepoName,
+  getProjectName,
 
   // File operations
   findFiles,
